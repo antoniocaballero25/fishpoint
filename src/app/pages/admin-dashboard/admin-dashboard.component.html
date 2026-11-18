@@ -1,0 +1,218 @@
+<div class="admin-wrapper">
+  <mat-toolbar class="admin-toolbar">
+    <div class="tb-brand">
+      <img src="assets/logo-fishpoint.png" alt="FishPoint" />
+      <span>Panel Super-Admin — FishPoint</span>
+    </div>
+
+    <div class="tb-actions">
+      <a mat-flat-button routerLink="/admin/nuevo" class="new-btn">
+        <mat-icon>add_circle</mat-icon> Crear Nuevo Concurso
+      </a>
+      <a mat-stroked-button routerLink="/" style="color:#fff; border-color:rgba(255,255,255,0.4);">
+        Portada
+      </a>
+      <button mat-icon-button (click)="logout()" title="Cerrar sesión" style="color:#fff;">
+        <mat-icon>logout</mat-icon>
+      </button>
+    </div>
+  </mat-toolbar>
+
+  <div class="admin-container">
+    <!-- LISTADO DE TODOS LOS CONCURSOS -->
+    <mat-card class="admin-card">
+      <h2>Tus Concursos ({{ tournaments.length }})</h2>
+      <p class="sub">Selecciona un concurso para editar sus participantes, pesquiles, premios, banners o jueces.</p>
+
+      <div class="tournaments-list">
+        <div
+          class="t-row"
+          *ngFor="let t of tournaments"
+          [class.selected]="selectedTournament?.id === t.id"
+          (click)="selectTournament(t)">
+          <div>
+            <strong>{{ t.name }}</strong>
+            <div class="t-slug">fishpoint.es/{{ t.slug }}</div>
+          </div>
+
+          <div class="t-badges" (click)="$event.stopPropagation()">
+            <span class="st-pill" [class.live]="t.status === 'activo'">
+              {{ t.status | uppercase }}
+            </span>
+
+            <a mat-stroked-button [routerLink]="['/', t.slug]" target="_blank" title="Ver web pública">
+              <mat-icon>visibility</mat-icon> Web
+            </a>
+
+            <a mat-stroked-button [routerLink]="['/', t.slug, 'juez']" title="Entrar a pesar">
+              <mat-icon>scale</mat-icon> Pesar
+            </a>
+
+            <button mat-stroked-button (click)="toggleStatus(t)">
+              {{ t.status === 'activo' ? 'Finalizar' : 'Reactivar' }}
+            </button>
+
+            <button mat-icon-button color="warn" (click)="deleteTournament(t)" title="Eliminar concurso">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </mat-card>
+
+    <!-- GESTIÓN DETALLADA DEL CONCURSO SELECCIONADO -->
+    <mat-card class="admin-card" *ngIf="selectedTournament as t">
+      <h2>Editando: {{ t.name }}</h2>
+
+      <mat-tab-group>
+        <!-- PESTAÑA 1: PARTICIPANTES Y SORTEO DE PESQUILES -->
+        <mat-tab label="Participantes ({{ participants.length }})">
+          <div class="tab-body">
+            <div class="action-bar">
+              <div class="inline-form">
+                <mat-form-field appearance="outline">
+                  <mat-label>Nombre pareja / participante</mat-label>
+                  <input matInput [(ngModel)]="newPartName" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" style="width:110px;">
+                  <mat-label>Pesquil</mat-label>
+                  <input matInput type="number" [(ngModel)]="newPartPesquil" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" *ngIf="t.has_zones">
+                  <mat-label>Zona</mat-label>
+                  <mat-select [(ngModel)]="newPartZone">
+                    <mat-option *ngFor="let z of t.zones" [value]="z">{{ z }}</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <button mat-flat-button color="primary" (click)="addParticipant()">+ Añadir</button>
+              </div>
+
+              <div>
+                <label class="excel-btn">
+                  <mat-icon>upload_file</mat-icon> Importar Excel
+                  <input type="file" accept=".xlsx,.xls,.csv" (change)="importMoreExcel($event)" hidden />
+                </label>
+              </div>
+            </div>
+
+            <div class="part-edit-list">
+              <div class="part-edit-row" *ngFor="let p of participants">
+                <input class="edit-inp name-inp" [(ngModel)]="p.names" />
+                <input class="edit-inp num-inp" type="number" [(ngModel)]="p.pesquil" placeholder="Pesquil" />
+                <select class="edit-inp" *ngIf="t.has_zones" [(ngModel)]="p.zone">
+                  <option [ngValue]="null">Sin zona</option>
+                  <option *ngFor="let z of t.zones" [value]="z">{{ z }}</option>
+                </select>
+                <button mat-stroked-button color="primary" (click)="saveParticipantRow(p)">Guardar</button>
+                <button mat-icon-button color="warn" (click)="removeParticipant(p.id)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- PESTAÑA 2: JUECES Y CONTRASEÑAS -->
+        <mat-tab label="Jueces ({{ judges.length }})">
+          <div class="tab-body">
+            <div class="inline-form">
+              <mat-form-field appearance="outline">
+                <mat-label>Usuario nuevo juez</mat-label>
+                <input matInput [(ngModel)]="newJudgeUser" />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Contraseña (mín. 6)</mat-label>
+                <input matInput [(ngModel)]="newJudgePass" />
+              </mat-form-field>
+              <mat-form-field appearance="outline" *ngIf="t.has_zones">
+                <mat-label>Zona</mat-label>
+                <mat-select [(ngModel)]="newJudgeZone">
+                  <mat-option [value]="null">🌐 Todas las zonas</mat-option>
+                  <mat-option *ngFor="let z of t.zones" [value]="z">{{ z }}</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <button mat-flat-button color="primary" (click)="addJudge()">+ Crear Juez</button>
+            </div>
+
+            <div class="judges-admin-list">
+              <div class="judge-admin-row" *ngFor="let j of judges">
+                <div>
+                  <strong>{{ j.username }}</strong>
+                  <span class="z-tag">{{ j.assigned_zone || 'Todas las zonas' }}</span>
+                </div>
+                <div class="j-actions">
+                  <button mat-stroked-button (click)="resetPassword(j)">Cambiar Contraseña</button>
+                  <button mat-icon-button color="warn" (click)="removeJudge(j.id)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- PESTAÑA 3: PREMIOS ESPECIALES -->
+        <mat-tab label="Premios Especiales ({{ awards.length }})">
+          <div class="tab-body">
+            <div class="inline-form">
+              <mat-form-field appearance="outline">
+                <mat-label>Nombre del premio</mat-label>
+                <input matInput [(ngModel)]="newAwardName" />
+              </mat-form-field>
+              <label>Fondo <input type="color" [(ngModel)]="newAwardBg" /></label>
+              <label>Texto <input type="color" [(ngModel)]="newAwardColor" /></label>
+              <button mat-flat-button color="primary" (click)="addAward()">+ Añadir Premio</button>
+            </div>
+
+            <div class="awards-admin-list">
+              <div
+                class="aw-item"
+                *ngFor="let a of awards"
+                [style.backgroundColor]="a.bg_color"
+                [style.color]="a.text_color">
+                <span>{{ a.name }}</span>
+                <mat-icon (click)="removeAward(a.id)" style="cursor:pointer;">delete</mat-icon>
+              </div>
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- PESTAÑA 4: LOGO, CARRUSEL DE PATROCINADORES Y REGLAS -->
+        <mat-tab label="Logo, Carrusel y Datos">
+          <div class="tab-body">
+            <div class="inline-form">
+              <mat-form-field appearance="outline" style="flex:1;">
+                <mat-label>Nombre del torneo</mat-label>
+                <input matInput [(ngModel)]="t.name" />
+              </mat-form-field>
+              <mat-form-field appearance="outline" style="width:160px;">
+                <mat-label>Peso mínimo (kg)</mat-label>
+                <input matInput type="number" step="0.1" [(ngModel)]="t.min_weight" />
+              </mat-form-field>
+              <button mat-flat-button color="primary" (click)="saveTournamentDetails()">Guardar Cambios</button>
+            </div>
+
+            <div class="media-box">
+              <h4>Cambiar Logo Superior</h4>
+              <input type="file" accept="image/*" (change)="replaceLogo($event)" />
+            </div>
+
+            <div class="media-box">
+              <h4>Imágenes del Carrusel de Patrocinadores ({{ t.sponsor_banners.length }})</h4>
+              <input type="file" accept="image/*" multiple (change)="addMoreBanners($event)" />
+
+              <div class="banners-grid">
+                <div class="banner-thumb" *ngFor="let b of t.sponsor_banners; let i = index">
+                  <img [src]="b" alt="Banner" />
+                  <button mat-mini-fab color="warn" (click)="removeBanner(i)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+    </mat-card>
+  </div>
+</div>

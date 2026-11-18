@@ -1,0 +1,121 @@
+<div class="judge-wrapper" *ngIf="tournament">
+  <mat-toolbar class="judge-toolbar">
+    <div class="tb-left">
+      <img src="assets/logo-fishpoint.png" alt="FishPoint" class="tb-logo" />
+      <div>
+        <div class="tb-title">{{ tournament.name }}</div>
+        <div class="tb-sub">
+          Juez: <strong>{{ profile?.username }}</strong>
+          <span *ngIf="profile?.assigned_zone"> — {{ profile?.assigned_zone }}</span>
+          <span *ngIf="!profile?.assigned_zone"> — Acceso Todas las Zonas</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tb-actions">
+      <a mat-stroked-button [routerLink]="['/', tournament.slug]" target="_blank" class="public-btn">
+        <mat-icon>leaderboard</mat-icon> Ver Tabla
+      </a>
+      <a *ngIf="profile?.role === 'super_admin'" mat-stroked-button routerLink="/admin" class="public-btn">
+        <mat-icon>admin_panel_settings</mat-icon> Admin
+      </a>
+      <button mat-icon-button (click)="logout()" title="Cerrar sesión" style="color:#fff;">
+        <mat-icon>logout</mat-icon>
+      </button>
+    </div>
+  </mat-toolbar>
+
+  <div class="judge-container">
+    <!-- FORMULARIO DE NUEVO PESAJE -->
+    <mat-card class="form-card">
+      <h2>Registrar Nueva Captura</h2>
+      <p class="rules-hint">
+        Peso mínimo: <strong>{{ tournament.min_weight | number:'1.2-2' }} kg</strong> ·
+        Límite puntuable: <strong>{{ tournament.max_fishes ? tournament.max_fishes + ' peces mayores' : 'Todos los peces' }}</strong>
+      </p>
+
+      <form (ngSubmit)="submitCatch()" class="catch-form">
+        <mat-form-field appearance="outline">
+          <mat-label>Seleccionar Participantes / Pesquil</mat-label>
+          <mat-select [(ngModel)]="selectedParticipantId" name="participantId" required>
+            <mat-option *ngFor="let p of allowedParticipants" [value]="p.id">
+              <span *ngIf="p.pesquil !== null">[Pesquil {{ p.pesquil }}] </span>
+              {{ p.names }}
+              <span *ngIf="p.zone"> ({{ p.zone }})</span>
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Peso de la captura (kg)</mat-label>
+          <input
+            matInput
+            type="number"
+            step="0.01"
+            min="0.01"
+            [(ngModel)]="weight"
+            name="weight"
+            placeholder="Ej: 12.45"
+            required />
+          <span matTextSuffix>kg</span>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" *ngIf="awards.length > 0">
+          <mat-label>Premio Especial (Opcional)</mat-label>
+          <mat-select [(ngModel)]="selectedAwardId" name="awardId">
+            <mat-option [value]="null">Ninguno</mat-option>
+            <mat-option *ngFor="let a of awards" [value]="a.id">
+              {{ a.name }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <div class="photo-upload-box">
+          <label class="file-label">
+            <mat-icon>photo_camera</mat-icon>
+            <span>{{ selectedPhoto ? selectedPhoto.name : 'Añadir foto de la captura (opcional)' }}</span>
+            <input type="file" accept="image/*" capture="environment" (change)="onPhotoSelected($event)" hidden />
+          </label>
+          <button *ngIf="selectedPhoto" type="button" mat-icon-button color="warn" (click)="selectedPhoto = null">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div *ngIf="errorMessage" class="alert-error">
+          <mat-icon>warning</mat-icon>
+          <span>{{ errorMessage }}</span>
+        </div>
+
+        <button mat-flat-button type="submit" [disabled]="saving" class="save-btn">
+          <mat-icon>scale</mat-icon>
+          {{ saving ? 'Guardando pesaje...' : 'Registrar Pesaje' }}
+        </button>
+      </form>
+    </mat-card>
+
+    <!-- LISTADO DE CAPTURAS DE LA PAREJA SELECCIONADA -->
+    <mat-card class="history-card" *ngIf="currentSelectedParticipant as sel">
+      <h3>Capturas de {{ sel.names }} (Total puntuable: {{ sel.totalWeight | number:'1.2-2' }} kg)</h3>
+
+      <p *ngIf="sel.allCatches.length === 0" class="empty-msg">
+        Aún no hay capturas registradas para este equipo.
+      </p>
+
+      <div class="catch-list">
+        <div class="catch-row" *ngFor="let c of sel.allCatches; let i = index">
+          <div class="catch-info">
+            <span class="badge-num">#{{ i + 1 }}</span>
+            <strong>{{ c.weight | number:'1.2-2' }} kg</strong>
+            <span class="tag-counted" *ngIf="c.is_counted">Puntúa</span>
+            <span class="tag-discarded" *ngIf="!c.is_counted">Sustituido (fuera de top)</span>
+            <span class="catch-time">{{ c.catch_time | date:'dd/MM HH:mm' }}</span>
+          </div>
+
+          <button mat-icon-button color="warn" (click)="deleteCatch(c.id)" title="Eliminar captura">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </div>
+    </mat-card>
+  </div>
+</div>

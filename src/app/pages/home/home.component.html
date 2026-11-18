@@ -1,0 +1,94 @@
+<div class="fp-home">
+  <header class="fp-hero">
+    <div class="fp-hero-inner">
+      <img src="assets/logo-fishpoint.png" alt="FishPoint Logo" class="fp-logo" />
+      <h1 class="fp-brand">FISHPOINT</h1>
+      <p class="fp-tagline">Clasificaciones en directo y gestión oficial de concursos de pesca</p>
+    </div>
+  </header>
+
+  <main class="fp-container">
+    <div *ngIf="loading" class="fp-loader">
+      <mat-spinner diameter="45"></mat-spinner>
+      <p>Cargando competiciones...</p>
+    </div>
+
+    <ng-container *ngIf="!loading">
+      <!-- CONCURSOS ACTIVOS -->
+      <section class="fp-section">
+        <div class="section-head">
+          <h2>Concursos en Directo</h2>
+          <span class="badge-live"><span class="dot"></span> Activos</span>
+        </div>
+
+        <div *ngIf="activeTournaments.length === 0" class="empty-box">
+          No hay ningún concurso disputándose en este momento.
+        </div>
+
+        <div class="tournaments-grid">
+          <a *ngFor="let t of activeTournaments" [routerLink]="['/', t.slug]" class="tournament-card active-card">
+            <div class="card-top">
+              <img [src]="t.logo_url || 'assets/logo-fishpoint.png'" alt="Logo torneo" class="t-logo" />
+              <span class="status-pill live">EN DIRECTO</span>
+            </div>
+            <div class="card-body">
+              <span class="modality-tag">{{ t.modality | uppercase }}</span>
+              <h3>{{ t.name }}</h3>
+              <p class="t-meta" *ngIf="t.location">
+                <mat-icon>location_on</mat-icon> {{ t.location }}
+              </p>
+              <p class="t-meta" *ngIf="t.start_date">
+                <mat-icon>event</mat-icon> {{ t.start_date | date:'dd/MM/yyyy' }}
+                <span *ngIf="t.end_date"> - {{ t.end_date | date:'dd/MM/yyyy' }}</span>
+              </p>
+            </div>
+            <div class="card-footer">
+              <span>Ver clasificación en vivo</span>
+              <mat-icon>arrow_forward</mat-icon>
+            </div>
+          </a>
+        </div>
+      </section>
+
+      <!-- CONCURSOS FINALIZADOS -->
+      <section class="fp-section" *ngIf="finishedTournaments.length > 0">
+        <div class="section-head">
+          <h2>Histórico de Concursos Finalizados</h2>
+        </div>
+
+        <div class="tournaments-grid">
+          <a *ngFor="let t of finishedTournaments" [routerLink]="['/', t.slug]" class="tournament-card finished-card">
+            <div class="card-top">
+              <img [src]="t.logo_url || 'assets/logo-fishpoint.png'" alt="Logo torneo" class="t-logo" />
+              <span class="status-pill done">FINALIZADO</span>
+            </div>
+            <div class="card-body">
+              <span class="modality-tag">{{ t.modality | uppercase }}</span>
+              <h3>{{ t.name }}</h3>
+              <p class="t-meta" *ngIf="t.location">
+                <mat-icon>location_on</mat-icon> {{ t.location }}
+              </p>
+              <p class="t-meta" *ngIf="t.start_date">
+                <mat-icon>event</mat-icon> {{ t.start_date | date:'dd/MM/yyyy' }}
+              </p>
+            </div>
+            <div class="card-footer">
+              <span>Consultar resultados oficiales</span>
+              <mat-icon>arrow_forward</mat-icon>
+            </div>
+          </a>
+        </div>
+      </section>
+    </ng-container>
+  </main>
+
+  <footer class="fp-footer">
+    <p>&copy; {{ currentYear }} <strong>FishPoint</strong> — Plataforma de Pesaje y Clasificación en Directo</p>
+    <p class="dev">
+      Desarrollado por <strong>Antonio Caballero</strong>
+      <a href="https://www.linkedin.com/in/antonio-caballero-gatlan-3556a21bb" target="_blank" rel="noopener noreferrer" class="li-btn" title="LinkedIn">
+        in
+      </a>
+    </p>
+  </footer>
+</div>

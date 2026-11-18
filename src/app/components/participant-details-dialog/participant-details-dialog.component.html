@@ -1,0 +1,62 @@
+<div class="dialog-header">
+  <h2 class="participant-title">{{ data.participant.names }}</h2>
+  <div class="badges-row">
+    <span class="badge-item badge-pesquil">
+      Pesquil {{ data.participant.pesquil ?? '?' }}
+    </span>
+    <span *ngIf="data.participant.zone" class="badge-item badge-zone">
+      {{ data.participant.zone }}
+    </span>
+    <span class="badge-item badge-catches">
+      {{ data.participant.totalPieces }} capturas
+    </span>
+  </div>
+</div>
+
+<div
+  *ngIf="data.awardBanner"
+  class="award-banner"
+  [style.backgroundColor]="data.awardBanner.bg_color"
+  [style.color]="data.awardBanner.text_color">
+  🏆 {{ data.awardBanner.name }}
+</div>
+
+<mat-dialog-content class="dialog-body">
+  <p *ngIf="visibleCatches.length === 0" class="empty-catches">
+    Todavía no tiene capturas registradas.
+  </p>
+
+  <div class="catches-list">
+    <div class="catch-card" *ngFor="let c of visibleCatches; let i = index">
+      <div class="catch-top">
+        <div class="catch-left">
+          <div class="catch-index">{{ i + 1 }}</div>
+          <div>
+            <div class="catch-weight">{{ c.weight | number:'1.2-2' }} kg</div>
+            <span *ngIf="!c.is_counted" class="out-of-quota-tag">
+              Fuera de cupo (no suma)
+            </span>
+          </div>
+        </div>
+
+        <div class="catch-datetime">
+          <div>{{ c.catch_time | date:'dd/MM/yyyy' }}</div>
+          <div>{{ c.catch_time | date:'HH:mm' }} h</div>
+        </div>
+      </div>
+
+      <div *ngIf="c.photo_url" class="catch-photo-box">
+        <img [src]="c.photo_url" alt="Foto captura" class="catch-photo" />
+      </div>
+    </div>
+  </div>
+
+  <div class="total-summary-box">
+    <span class="total-label">PESO TOTAL PUNTUABLE</span>
+    <span class="total-value">{{ data.participant.totalWeight | number:'1.2-2' }} kg</span>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-footer">
+  <button mat-flat-button mat-dialog-close class="close-btn">Cerrar</button>
+</mat-dialog-actions>

@@ -1,0 +1,204 @@
+<div class="page-wrapper" *ngIf="!loading && tournament; else loaderTpl">
+  <!-- BARRA SUPERIOR AZUL MARINO -->
+  <mat-toolbar color="primary" class="app-toolbar mat-elevation-z4">
+    <a routerLink="/" class="home-back-btn" title="Volver a FishPoint">
+      <img src="assets/logo-fishpoint.png" alt="FishPoint" />
+    </a>
+    <div class="center-brand">
+      <span class="toolbar-icon" *ngIf="tournament.logo_url">
+        <img [src]="tournament.logo_url" alt="Logo torneo" />
+      </span>
+      <span class="toolbar-title">{{ tournament.name }}</span>
+    </div>
+    <div class="right-placeholder"></div>
+  </mat-toolbar>
+
+  <div class="content">
+    <div class="section-header">
+      <h1 class="section-title">
+        {{ selectedZone === 'GENERAL' ? 'Clasificación General' : selectedZone }}
+      </h1>
+      <span class="live-badge" *ngIf="tournament.status === 'activo'">
+        <span class="live-dot"></span> En directo
+      </span>
+      <span class="finished-badge" *ngIf="tournament.status === 'finalizado'">
+        Finalizado
+      </span>
+    </div>
+
+    <p class="section-subtitle">
+      Ordenado por peso total capturado (desempate por pesquil más bajo) — Pulsa en una pareja para ver su ficha y fotos
+    </p>
+
+    <!-- PESTAÑAS DE ZONAS -->
+    <div class="zone-selector-container" *ngIf="tournament.has_zones && tournament.zones.length > 0">
+      <button
+        class="zone-tab-btn"
+        [class.active]="selectedZone === 'GENERAL'"
+        (click)="selectZone('GENERAL')">
+        🌐 Clasificación General
+      </button>
+      <button
+        *ngFor="let z of tournament.zones"
+        class="zone-tab-btn"
+        [class.active]="selectedZone === z"
+        (click)="selectZone(z)">
+        {{ z }}
+      </button>
+    </div>
+
+    <!-- TABLA DE CLASIFICACIÓN -->
+    <mat-card class="table-card mat-elevation-z2">
+      <mat-card-content>
+        <div class="table-container">
+          <table mat-table [dataSource]="filteredLeaderboard" class="leaderboard-table">
+
+            <ng-container matColumnDef="pos">
+              <th mat-header-cell *matHeaderCellDef class="col-pos">Pos.</th>
+              <td mat-cell *matCellDef="let row; let i = index" class="col-pos">
+                <span class="medal">{{ getMedal(i) }}</span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="names">
+              <th mat-header-cell *matHeaderCellDef>Participantes</th>
+              <td mat-cell *matCellDef="let row" class="names-cell">
+                <strong>{{ row.names }}</strong>
+                <span class="zone-mini-tag" *ngIf="tournament.has_zones && selectedZone === 'GENERAL' && row.zone">
+                  {{ row.zone }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="pesquil">
+              <th mat-header-cell *matHeaderCellDef class="col-center">Pesquil</th>
+              <td mat-cell *matCellDef="let row" class="col-center">
+                <span class="pesquil-badge">{{ row.pesquil ?? '-' }}</span>
+              </td>
+            </ng-container>
+
+            <ng-container *ngFor="let idx of fishColumnIndices" [matColumnDef]="'p' + (idx + 1)">
+              <th mat-header-cell *matHeaderCellDef class="col-fish">Pez {{ idx + 1 }}</th>
+              <td mat-cell *matCellDef="let row" class="col-fish">
+                <ng-container *ngIf="row.displayCatches[idx] as fish; else emptyFish">
+                  <span
+                    class="fish-weight"
+                    [style.backgroundColor]="getAwardBg(fish.special_award_id)"
+                    [style.color]="getAwardColor(fish.special_award_id)">
+                    {{ fish.weight | number:'1.2-2' }} kg
+                  </span>
+                </ng-container>
+                <ng-template #emptyFish>
+                  <span class="fish-empty">-</span>
+                </ng-template>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="pieces">
+              <th mat-header-cell *matHeaderCellDef class="col-center">Piezas</th>
+              <td mat-cell *matCellDef="let row" class="col-center">
+                <span class="pieces-badge">{{ row.totalPieces }}</span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="totalWeight">
+              <th mat-header-cell *matHeaderCellDef class="col-total">Total</th>
+              <td mat-cell *matCellDef="let row" class="col-total">
+                <span class="total-weight">{{ row.totalWeight | number:'1.2-2' }} kg</span>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+            <tr
+              mat-row
+              *matRowDef="let row; columns: displayedColumns"
+              [class.top-row]="filteredLeaderboard[0]?.id === row.id"
+              class="clickable-row"
+              (click)="openParticipantDetails(row)">
+            </tr>
+          </table>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- CARRUSEL DE PATROCINADORES -->
+    <div class="banner-carousel mat-elevation-z2" *ngIf="tournament.sponsor_banners.length > 0">
+      <div
+        class="carousel-track"
+        [style.transform]="'translateX(' + (-currentBannerIndex * 100) + '%)'">
+        <div class="carousel-slide" *ngFor="let img of tournament.sponsor_banners">
+          <img [src]="img" alt="Patrocinador" />
+        </div>
+      </div>
+    </div>
+
+    <!-- PREMIOS ESPECIALES -->
+    <mat-card class="legend-card mat-elevation-z2" *ngIf="awardsWithWinners.length > 0">
+      <mat-card-content>
+        <h3>Premios Especiales</h3>
+        <p class="legend-subtitle">Pulsa en un premio con ganador para ver los detalles y la foto de la captura.</p>
+
+        <div class="awards-grid">
+          <div
+            class="award-item"
+            *ngFor="let award of awardsWithWinners"
+            [style.backgroundColor]="award.bg_color"
+            [style.color]="award.text_color"
+            [class.has-winner]="award.winner"
+            (click)="openAwardDetails(award)">
+
+            <div class="award-title">{{ award.name }}</div>
+
+            <div class="award-winner-info" *ngIf="award.winner">
+              <div class="winner-name">{{ award.winner.participant.names }}</div>
+              <div class="winner-stats">
+                <span>Pesquil {{ award.winner.participant.pesquil ?? '?' }}</span>
+                <span>{{ award.winner.catchItem.weight | number:'1.2-2' }} kg</span>
+              </div>
+            </div>
+
+            <div class="award-empty-info" *ngIf="!award.winner">
+              <span>Todavía sin capturas...</span>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- BLOQUE DE MARCA INFERIOR -->
+    <div class="platform-brand-card mat-elevation-z2">
+      <img src="assets/logo-fishpoint.png" alt="Logo FishPoint" class="platform-logo-img" />
+      <div class="platform-text-box">
+        <span class="platform-title">FISHPOINT — TU PESAJE ONLINE</span>
+        <span class="platform-subtitle">GESTIÓN DE TORNEOS Y CLASIFICACIÓN EN DIRECTO</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="app-footer">
+    <p class="footer-copy">&copy; {{ currentYear }} {{ tournament.name }}. Todos los derechos reservados.</p>
+    <p class="developer-credit">
+      Desarrollado por <strong>Antonio Caballero</strong>
+      <a
+        href="https://www.linkedin.com/in/antonio-caballero-gatlan-3556a21bb"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="linkedin-icon-link"
+        title="Ver perfil de LinkedIn">
+        in
+      </a>
+    </p>
+  </footer>
+</div>
+
+<ng-template #loaderTpl>
+  <div class="center-screen">
+    <mat-spinner *ngIf="loading" diameter="48"></mat-spinner>
+    <div *ngIf="!loading && !tournament" class="not-found-box">
+      <h2>Concurso no encontrado</h2>
+      <p>El enlace que has abierto no corresponde a ningún torneo registrado.</p>
+      <a mat-flat-button color="primary" routerLink="/">Ver todos los concursos</a>
+    </div>
+  </div>
+</ng-template>

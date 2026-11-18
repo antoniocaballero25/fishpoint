@@ -1,0 +1,33 @@
+<div class="login-wrapper">
+  <mat-card class="login-card">
+    <div class="login-header">
+      <img src="assets/logo-fishpoint.png" alt="FishPoint" class="login-logo" />
+      <h1>Acceso Organización</h1>
+      <p>Introduce tu usuario y contraseña asignados</p>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" class="login-form">
+      <mat-form-field appearance="outline">
+        <mat-label>Usuario</mat-label>
+        <input matInput [(ngModel)]="username" name="username" required autocomplete="username" />
+        <mat-icon matSuffix>person</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Contraseña</mat-label>
+        <input matInput [type]="hidePass ? 'password' : 'text'" [(ngModel)]="password" name="password" required />
+        <button type="button" mat-icon-button matSuffix (click)="hidePass = !hidePass">
+          <mat-icon>{{ hidePass ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+      </mat-form-field>
+
+      <div *ngIf="errorMsg" class="error-banner">
+        {{ errorMsg }}
+      </div>
+
+      <button mat-flat-button color="primary" type="submit" [disabled]="loading" class="submit-btn">
+        {{ loading ? 'Entrando...' : 'Iniciar Sesión' }}
+      </button>
+    </form>
+  </mat-card>
+</div>

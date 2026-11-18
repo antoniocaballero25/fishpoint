@@ -1,0 +1,250 @@
+<div class="wizard-wrapper">
+  <mat-toolbar class="wiz-toolbar">
+    <a mat-icon-button routerLink="/admin" style="color:#fff;">
+      <mat-icon>arrow_back</mat-icon>
+    </a>
+    <span>Crear Nuevo Concurso — FishPoint</span>
+  </mat-toolbar>
+
+  <div class="wiz-container">
+    <!-- BLOQUE 1: MODALIDAD Y REGLAS -->
+    <mat-card class="wiz-card">
+      <h2>1. Modalidad y Reglas del Concurso</h2>
+
+      <label class="field-title">¿Para qué modalidad es el concurso?</label>
+      <div class="modality-grid">
+        <button
+          type="button"
+          class="mod-btn"
+          [class.selected]="modality === 'carpa'"
+          (click)="modality = 'carpa'">
+          <strong>🐟 Carpa</strong>
+          <span>Disponible</span>
+        </button>
+        <button type="button" class="mod-btn disabled" disabled>
+          <strong>🎣 Bass</strong>
+          <span>Próximamente</span>
+        </button>
+        <button type="button" class="mod-btn disabled" disabled>
+          <strong>🌊 Mar</strong>
+          <span>Próximamente</span>
+        </button>
+      </div>
+
+      <div class="divider"></div>
+
+      <label class="field-title">¿El concurso se divide por zonas?</label>
+      <mat-radio-group [(ngModel)]="hasZones" name="hasZones" class="radio-row">
+        <mat-radio-button [value]="false">Sin zonas (Clasificación única)</mat-radio-button>
+        <mat-radio-button [value]="true">Por zonas</mat-radio-button>
+      </mat-radio-group>
+
+      <div *ngIf="hasZones" class="zones-builder">
+        <p class="hint">Añade las zonas del concurso (ej. Zona A, Zona B, Zona Peloche...):</p>
+        <div class="inline-add">
+          <mat-form-field appearance="outline" class="flex-1">
+            <mat-label>Nombre de la zona</mat-label>
+            <input matInput [(ngModel)]="newZoneName" name="newZoneName" (keyup.enter)="addZone()" />
+          </mat-form-field>
+          <button type="button" mat-flat-button color="primary" (click)="addZone()" class="add-btn">
+            + Añadir Zona
+          </button>
+        </div>
+        <div class="chips-list">
+          <span class="zone-chip" *ngFor="let z of zones; let i = index">
+            {{ z }}
+            <mat-icon (click)="removeZone(i)">close</mat-icon>
+          </span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <label class="field-title">¿Cuántos peces puntúan por participante?</label>
+      <mat-radio-group [(ngModel)]="fishLimitMode" name="fishLimitMode" class="radio-row">
+        <mat-radio-button value="limited">Un número máximo de peces (los más grandes)</mat-radio-button>
+        <mat-radio-button value="all">Valen todos los peces que se añadan</mat-radio-button>
+      </mat-radio-group>
+
+      <div class="two-cols" style="margin-top:12px;">
+        <mat-form-field appearance="outline" *ngIf="fishLimitMode === 'limited'">
+          <mat-label>¿Cuántos peces cuentan? (Ej: 4 o 5)</mat-label>
+          <input matInput type="number" min="1" max="20" [(ngModel)]="maxFishes" name="maxFishes" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Peso mínimo para meter peces (kg)</mat-label>
+          <input matInput type="number" step="0.1" min="0" [(ngModel)]="minWeight" name="minWeight" />
+          <span matTextSuffix>kg</span>
+        </mat-form-field>
+      </div>
+    </mat-card>
+
+    <!-- BLOQUE 2: IDENTIDAD DEL TORNEO, LOGO Y CARRUSEL -->
+    <mat-card class="wiz-card">
+      <h2>2. Nombre, Enlace Web, Logo y Patrocinadores</h2>
+
+      <div class="two-cols">
+        <mat-form-field appearance="outline">
+          <mat-label>Nombre del Concurso (Barra superior)</mat-label>
+          <input
+            matInput
+            [(ngModel)]="name"
+            name="name"
+            (ngModelChange)="autoGenerateSlug()"
+            placeholder="Ej: IV OPEN ORONCARP GARCÍA SOLA"
+            required />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Enlace web (fishpoint.es/...)</mat-label>
+          <input matInput [(ngModel)]="slug" name="slug" placeholder="ej: open-oroncarp" required />
+          <mat-hint>URL final: fishpoint.es/{{ slug || 'nombre-concurso' }}</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <div class="three-cols">
+        <mat-form-field appearance="outline">
+          <mat-label>Embalse / Lugar</mat-label>
+          <input matInput [(ngModel)]="location" name="location" placeholder="Ej: Embalse de García Sola" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Fecha inicio</mat-label>
+          <input matInput type="date" [(ngModel)]="startDate" name="startDate" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Fecha fin</mat-label>
+          <input matInput type="date" [(ngModel)]="endDate" name="endDate" />
+        </mat-form-field>
+      </div>
+
+      <div class="upload-section">
+        <label class="field-title">Logo del concurso (el que sale arriba junto al título):</label>
+        <input type="file" accept="image/*" (change)="onLogoSelected($event)" />
+        <span class="file-ok" *ngIf="logoFile">✅ {{ logoFile.name }}</span>
+      </div>
+
+      <div class="upload-section">
+        <label class="field-title">Imágenes para el carrusel de publicidad / patrocinadores:</label>
+        <input type="file" accept="image/*" multiple (change)="onSponsorsSelected($event)" />
+        <span class="file-ok" *ngIf="sponsorFiles.length > 0">
+          ✅ {{ sponsorFiles.length }} imagen(es) seleccionadas
+        </span>
+      </div>
+    </mat-card>
+
+    <!-- BLOQUE 3: PREMIOS ESPECIALES Y COLORES -->
+    <mat-card class="wiz-card">
+      <h2>3. Premios Especiales y Colores</h2>
+      <p class="hint">Añade cada premio especial y elige el color de su tarjeta y etiqueta en la tabla.</p>
+
+      <div class="award-builder">
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Nombre del premio (Ej: CARPA MAYOR, 1º ZONA A...)</mat-label>
+          <input matInput [(ngModel)]="newAwardName" name="newAwardName" />
+        </mat-form-field>
+
+        <div class="color-picker-box">
+          <span>Fondo</span>
+          <input type="color" [(ngModel)]="newAwardBg" name="newAwardBg" />
+        </div>
+
+        <div class="color-picker-box">
+          <span>Texto</span>
+          <input type="color" [(ngModel)]="newAwardColor" name="newAwardColor" />
+        </div>
+
+        <button type="button" mat-flat-button color="primary" (click)="addAward()" class="add-btn">
+          + Añadir Premio
+        </button>
+      </div>
+
+      <div class="awards-preview-list">
+        <div
+          class="award-pill"
+          *ngFor="let a of awards; let i = index"
+          [style.backgroundColor]="a.bg_color"
+          [style.color]="a.text_color">
+          <span>{{ a.name }}</span>
+          <mat-icon (click)="removeAward(i)">delete</mat-icon>
+        </div>
+      </div>
+    </mat-card>
+
+    <!-- BLOQUE 4: EXCEL DE PARTICIPANTES -->
+    <mat-card class="wiz-card">
+      <h2>4. Participantes (Importar desde Excel)</h2>
+      <p class="hint">
+        Sube un archivo Excel (.xlsx / .xls) con las columnas: <strong>Participantes</strong>, <strong>Pesquil</strong> (opcional) y <strong>Zona</strong> (opcional).
+      </p>
+
+      <input type="file" accept=".xlsx,.xls,.csv" (change)="onExcelSelected($event)" />
+
+      <div *ngIf="parsedParticipants.length > 0" class="excel-summary">
+        <strong>✅ Se han leído {{ parsedParticipants.length }} participantes del Excel:</strong>
+        <ul>
+          <li *ngFor="let p of parsedParticipants.slice(0, 5)">
+            {{ p.names }}
+            <span *ngIf="p.pesquil !== null"> — Pesquil {{ p.pesquil }}</span>
+            <span *ngIf="p.zone"> — {{ p.zone }}</span>
+          </li>
+          <li *ngIf="parsedParticipants.length > 5">... y {{ parsedParticipants.length - 5 }} más.</li>
+        </ul>
+      </div>
+    </mat-card>
+
+    <!-- BLOQUE 5: CREACIÓN DE JUECES -->
+    <mat-card class="wiz-card">
+      <h2>5. Jueces del Concurso</h2>
+
+      <mat-form-field appearance="outline" style="max-width:260px;">
+        <mat-label>¿Cuántos jueces vas a crear?</mat-label>
+        <input
+          matInput
+          type="number"
+          min="0"
+          max="30"
+          [(ngModel)]="judgeCount"
+          name="judgeCount"
+          (ngModelChange)="syncJudgesArray()" />
+      </mat-form-field>
+
+      <div class="judges-list" *ngIf="judges.length > 0">
+        <div class="judge-box" *ngFor="let j of judges; let i = index">
+          <h4>Juez #{{ i + 1 }}</h4>
+          <div class="three-cols">
+            <mat-form-field appearance="outline">
+              <mat-label>Usuario (ej: juez1_oroncarp)</mat-label>
+              <input matInput [(ngModel)]="j.username" [name]="'j_user_' + i" required />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Contraseña</mat-label>
+              <input matInput [(ngModel)]="j.password" [name]="'j_pass_' + i" required />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" *ngIf="hasZones">
+              <mat-label>Zona asignada</mat-label>
+              <mat-select [(ngModel)]="j.assigned_zone" [name]="'j_zone_' + i">
+                <mat-option [value]="null">🌐 Todas las zonas</mat-option>
+                <mat-option *ngFor="let z of zones" [value]="z">{{ z }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+      </div>
+    </mat-card>
+
+    <!-- BOTÓN CREAR CONCURSO -->
+    <button
+      mat-flat-button
+      class="create-final-btn"
+      [disabled]="creating"
+      (click)="createTournament()">
+      <mat-icon>rocket_launch</mat-icon>
+      {{ creating ? 'Creando web del concurso...' : 'Crear Concurso y Generar Web' }}
+    </button>
+  </div>
+</div>
